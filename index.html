@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Погода — швидкий дашборд</title>
+  <meta name="description" content="Актуальна погода та графік температури на добу без реклами та зайвих меню.">
+  <meta name="theme-color" content="#3a8bdc">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-sky="clear-day">
+
+  <!-- Динамічне небо: колір, зірки, опади -->
+  <div class="sky" aria-hidden="true">
+    <div class="haze haze-a"></div>
+    <div class="haze haze-b"></div>
+    <div class="stars" id="stars"></div>
+    <div class="precip" id="precip"></div>
+  </div>
+
+  <!-- Сповіщення про помилку -->
+  <div class="toast" id="toast" role="alert" aria-live="assertive" hidden>
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    <span id="toastText"></span>
+  </div>
+
+  <main class="app is-loading" id="app">
+
+    <!-- ВЕРХ: пошук міста -->
+    <header class="top" data-in style="--i:0">
+      <form class="search glass" id="searchForm" role="search" autocomplete="off">
+        <svg class="search-ico" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M11 19a8 8 0 100-16 8 8 0 000 16zm10 2l-4.3-4.3"/></svg>
+        <label class="sr-only" for="cityInput">Назва міста</label>
+        <input id="cityInput" name="city" type="text" placeholder="Введіть місто" enterkeyhint="search" maxlength="80">
+        <button type="button" class="icon-btn" id="geoBtn" aria-label="Визначити моє місцезнаходження" title="Моє місцезнаходження">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 11l18-8-8 18-2-8-8-2z"/></svg>
+        </button>
+        <button type="submit" class="primary" id="searchBtn">Пошук</button>
+      </form>
+      <div class="chips" id="chips" aria-label="Збережені міста"></div>
+    </header>
+
+    <!-- ЦЕНТР: головна картка -->
+    <section class="hero glass" aria-labelledby="cityName" data-in style="--i:1">
+      <div class="hero-main">
+        <p class="when" id="when">&nbsp;</p>
+        <h1 id="cityName">Кременчук</h1>
+        <p class="temp" aria-live="polite"><span id="temp">–</span><span class="deg">°</span></p>
+        <p class="desc" id="desc">Завантаження…</p>
+        <p class="range">Макс <b id="hi">–</b>°&ensp;Мін <b id="lo">–</b>°</p>
+      </div>
+      <div class="hero-icon" id="icon" aria-hidden="true"></div>
+      <button class="save" id="saveBtn" type="button" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path class="star" d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9L3.5 9.7l5.9-.8L12 3.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span id="saveText">Зберегти</span>
+      </button>
+    </section>
+
+    <!-- НИЗ: міні-картки -->
+    <section class="stats" aria-label="Показники" data-in style="--i:2">
+      <article class="stat glass">
+        <h2>Вітер</h2>
+        <p class="val"><span id="wind">–</span><small>м/с</small></p>
+        <div class="viz compass" aria-hidden="true"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width="2"/><g id="arrow" style="transform-origin:24px 24px"><path d="M24 7l6 17h-12z" fill="currentColor"/><path d="M24 41l-4-9h8z" fill="currentColor" fill-opacity=".35"/></g></svg></div>
+        <p class="note" id="windNote">–</p>
+      </article>
+      <article class="stat glass">
+        <h2>Вологість</h2>
+        <p class="val"><span id="hum">–</span><small>%</small></p>
+        <div class="viz bar" aria-hidden="true"><i id="humBar"></i></div>
+        <p class="note" id="humNote">–</p>
+      </article>
+      <article class="stat glass">
+        <h2>Тиск</h2>
+        <p class="val"><span id="pres">–</span><small>мм рт. ст.</small></p>
+        <div class="viz bar gauge" aria-hidden="true"><i id="presDot"></i></div>
+        <p class="note" id="presNote">–</p>
+      </article>
+      <article class="stat glass">
+        <h2>Відчувається</h2>
+        <p class="val"><span id="feels">–</span><small class="tight">°</small></p>
+        <div class="viz bar" aria-hidden="true"><i id="feelsBar"></i></div>
+        <p class="note" id="feelsNote">–</p>
+      </article>
+    </section>
+
+    <!-- НИЗ: графік температури -->
+    <section class="chart glass" aria-labelledby="chartTitle" data-in style="--i:3">
+      <div class="chart-head">
+        <h2 id="chartTitle">Температура на 24 години</h2>
+        <p class="readout" id="readout" aria-live="polite">&nbsp;</p>
+      </div>
+      <div class="chart-scroll">
+        <svg id="chart" viewBox="0 0 800 260" role="img" aria-label="Графік температури на найближчі 24 години"></svg>
+      </div>
+    </section>
+
+    <footer class="foot" data-in style="--i:4">
+      Дані: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Оновлюється при кожному пошуку.
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
